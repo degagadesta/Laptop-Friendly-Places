@@ -1,0 +1,11 @@
+{
+    "name": "hp/laptop-friendly-places",
+    "autoload": {
+        "psr-4": {
+            "Hp\\LaptopFriendlyPlaces\\": "src/"
+        }
+    },
+    "require": {
+        "vlucas/phpdotenv": "^5.6"
+    }
+}
