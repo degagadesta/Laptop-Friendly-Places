@@ -1,50 +1,43 @@
 <?php
-require_once "../../config/env.php";
 
-$key = $_ENV['JWT_SECRET'];
-$expiry = $_ENV['JWT_EXPIRY'];
-
-function base64UrlEncode($data) {
+function base64url_encode($data) {
     return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
 }
 
-function generateJWT($payload) {
-    global $key, $expiry;
-
-    $header = base64UrlEncode(json_encode([
-        "alg" => "HS256",
-        "typ" => "JWT"
-    ]));
-
-    $payload['exp'] = time() + $expiry;
-
-    $payload = base64UrlEncode(json_encode($payload));
-
-    $signature = base64UrlEncode(
-        hash_hmac("sha256", "$header.$payload", $key, true)
-    );
-
-    return "$header.$payload.$signature";
+function base64url_decode($data) {
+    return base64_decode(strtr($data, '-_', '+/'));
 }
 
-function verifyJWT($jwt) {
-    global $key;
+function createJWT($payload, $secret) {
+    $header = [
+        "alg" => "HS256",
+        "typ" => "JWT"
+    ];
 
+    $headerEncoded = base64url_encode(json_encode($header));
+    $payloadEncoded = base64url_encode(json_encode($payload));
+
+    $signature = hash_hmac('sha256', "$headerEncoded.$payloadEncoded", $secret, true);
+    $signatureEncoded = base64url_encode($signature);
+
+    return "$headerEncoded.$payloadEncoded.$signatureEncoded";
+}
+
+function verifyJWT($jwt, $secret) {
     $parts = explode('.', $jwt);
+
     if (count($parts) !== 3) return false;
 
-    list($header, $payload, $signature) = $parts;
+    [$header, $payload, $signature] = $parts;
 
-    $validSignature = base64UrlEncode(
-        hash_hmac("sha256", "$header.$payload", $key, true)
+    $validSignature = base64url_encode(
+        hash_hmac('sha256', "$header.$payload", $secret, true)
     );
 
-    if ($signature !== $validSignature) return false;
+    if (!hash_equals($validSignature, $signature)) {
+        return false;
+    }
 
-    $data = json_decode(base64_decode(strtr($payload, '-_', '+/')), true);
-
-    if ($data['exp'] < time()) return false;
-
-    return $data;
+    return json_decode(base64url_decode($payload), true);
 }
 ?>

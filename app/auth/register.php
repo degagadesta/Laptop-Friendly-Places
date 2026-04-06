@@ -2,6 +2,7 @@
 header("Content-Type: application/json");
 
 require_once "../../config/db.php";
+require_once "jwt.php";
 
 $data = json_decode(file_get_contents("php://input"), true);
 
@@ -14,23 +15,25 @@ if (!$name || !$email || !$password) {
     exit;
 }
 
-// check existing email
+/* Check if user exists */
 $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
 $stmt->execute([$email]);
 
 if ($stmt->fetch()) {
-    echo json_encode(["error" => "Email already exists"]);
+    echo json_encode(["error" => "User already exists"]);
     exit;
 }
 
-// hash password
-$hashedPassword = password_hash($password, PASSWORD_BCRYPT);
+/* Hash password */
+$hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-// insert user
-$stmt = $conn->prepare("INSERT INTO users (name, email, password) VALUES (?, ?, ?)");
+/* Insert user */
+$stmt = $conn->prepare("
+    INSERT INTO users (name, email, password)
+    VALUES (?, ?, ?)
+");
+
 $stmt->execute([$name, $email, $hashedPassword]);
 
-echo json_encode([
-    "message" => "User registered successfully"
-]);
+echo json_encode(["message" => "User registered successfully"]);
 ?>

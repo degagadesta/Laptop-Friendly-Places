@@ -1,16 +1,14 @@
 <?php
-require_once "env.php";
-
-$host = $_ENV['DB_HOST'];
-$dbname = $_ENV['DB_NAME'];
-$username = $_ENV['DB_USER'];
-$password = $_ENV['DB_PASS'];
+$host = "localhost";
+$db = "lfp";
+$user = "root";
+$pass = "";
 
 try {
-    $conn = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
+    $conn = new PDO("mysql:host=$host;dbname=$db", $user, $pass);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch(PDOException $e) {
-    echo json_encode(["error" => "Database connection failed"]);
+} catch (PDOException $e) {
+    echo json_encode(["error" => "DB Connection failed"]);
     exit;
 }
 ?>
