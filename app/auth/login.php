@@ -25,10 +25,21 @@ if (!$user || !password_verify($password, $user['password'])) {
     exit;
 }
 
+// Check if user is blocked
+if (isset($user['is_blocked']) && $user['is_blocked']) {
+    echo json_encode(["error" => "Account has been blocked"]);
+    exit;
+}
+
+// Update last login
+$stmt = $conn->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
+$stmt->execute([$user['id']]);
+
 // generate token
 $token = generateJWT([
     "id" => $user['id'],
-    "email" => $user['email']
+    "email" => $user['email'],
+    "role" => $user['role'] ?? 'user'
 ]);
 
 echo json_encode([
