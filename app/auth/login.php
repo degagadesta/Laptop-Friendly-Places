@@ -2,7 +2,7 @@
 header("Content-Type: application/json");
 
 require_once "../../config/db.php";
-require_once "./jwt.php";
+require_once "jwt.php";
 
 $data = json_decode(file_get_contents("php://input"), true);
 
@@ -14,7 +14,7 @@ if (!$email || !$password) {
     exit;
 }
 
-// find user
+/* Find user */
 $stmt = $conn->prepare("SELECT * FROM users WHERE email = ?");
 $stmt->execute([$email]);
 
@@ -25,30 +25,19 @@ if (!$user || !password_verify($password, $user['password'])) {
     exit;
 }
 
-// Check if user is blocked
-if (isset($user['is_blocked']) && $user['is_blocked']) {
-    echo json_encode(["error" => "Account has been blocked"]);
-    exit;
-}
+/* Create JWT */
+$secret = "my_secret_key"; // change this in real project
 
-// Update last login
-$stmt = $conn->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
-$stmt->execute([$user['id']]);
-
-// generate token
-$token = generateJWT([
-    "id" => $user['id'],
+$payload = [
+    "user_id" => $user['id'],
     "email" => $user['email'],
-    "role" => $user['role'] ?? 'user'
-]);
+    "exp" => time() + (60 * 60) // 1 hour
+];
+
+$token = createJWT($payload, $secret);
 
 echo json_encode([
     "message" => "Login successful",
-    "token" => $token,
-    "user" => [
-        "id" => $user['id'],
-        "name" => $user['name'],
-        "email" => $user['email']
-    ]
+    "token" => $token
 ]);
 ?>

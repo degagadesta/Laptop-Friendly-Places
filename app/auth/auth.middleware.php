@@ -1,26 +1,27 @@
 <?php
-require_once "./jwt.php";
+require_once "jwt.php";
 
 function authenticate() {
+
     $headers = getallheaders();
 
     if (!isset($headers['Authorization'])) {
-        http_response_code(401);
         echo json_encode(["error" => "Unauthorized"]);
         exit;
     }
 
-    $token = str_replace("Bearer ", "", $headers['Authorization']);
+    $token = $matches[1];
 
-    $user = verifyJWT($token);
+    $secret = "my_secret_key";
+
+    $decoded = verifyJWT($token, $secret);
 
     if (!$user) {
-        http_response_code(401);
         echo json_encode(["error" => "Invalid or expired token"]);
         exit;
     }
 
-    return $user;
+    return $decoded; // contains user_id
 }
 
 function requireRole($allowedRoles = []) {
