@@ -1,5 +1,13 @@
 <?php
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
 header("Content-Type: application/json");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
 
 require_once "../../config/db.php";
 require_once "jwt.php";
@@ -35,5 +43,26 @@ $stmt = $conn->prepare("
 
 $stmt->execute([$name, $email, $hashedPassword]);
 
-echo json_encode(["message" => "User registered successfully"])
+$userId = $conn->lastInsertId();
+
+/* Create JWT for auto-login */
+$payload = [
+    "id" => $userId,
+    "email" => $email,
+    "role" => 'user',
+    "exp" => time() + (60 * 60) // 1 hour
+];
+
+$token = generateJWT($payload);
+
+echo json_encode([
+    "message" => "User registered successfully",
+    "token" => $token,
+    "user" => [
+        "id" => $userId,
+        "name" => $name,
+        "email" => $email,
+        "role" => 'user'
+    ]
+]);
 ?>

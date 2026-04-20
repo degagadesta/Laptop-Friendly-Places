@@ -1,5 +1,13 @@
 <?php
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
 header("Content-Type: application/json");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
 
 require_once "../../config/db.php";
 require_once "jwt.php";
@@ -21,23 +29,35 @@ $stmt->execute([$email]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$user || !password_verify($password, $user['password'])) {
+    http_response_code(401);
     echo json_encode(["error" => "Invalid credentials"]);
     exit;
 }
 
-/* Create JWT */
-$secret = "my_secret_key"; // change this in real project
+if ($user['is_blocked']) {
+    http_response_code(403);
+    echo json_encode(["error" => "Account is blocked"]);
+    exit;
+}
 
+/* Create JWT */
 $payload = [
-    "user_id" => $user['id'],
+    "id" => $user['id'],
     "email" => $user['email'],
+    "role" => $user['role'] ?? 'user',
     "exp" => time() + (60 * 60) // 1 hour
 ];
 
-$token = createJWT($payload, $secret);
+$token = generateJWT($payload);
 
 echo json_encode([
     "message" => "Login successful",
-    "token" => $token
+    "token" => $token,
+    "user" => [
+        "id" => $user['id'],
+        "name" => $user['name'],
+        "email" => $user['email'],
+        "role" => $user['role'] ?? 'user'
+    ]
 ]);
 ?>

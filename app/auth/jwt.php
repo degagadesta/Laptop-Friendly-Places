@@ -23,7 +23,7 @@ function createJWT($payload, $secret) {
     return "$headerEncoded.$payloadEncoded.$signatureEncoded";
 }
 
-function verifyJWT($jwt, $secret) {
+function verifyJWT($jwt, $secret = "my_secret_key") {
     $parts = explode('.', $jwt);
 
     if (count($parts) !== 3) return false;
@@ -38,6 +38,20 @@ function verifyJWT($jwt, $secret) {
         return false;
     }
 
-    return json_decode(base64url_decode($payload), true);
+    $decoded = json_decode(base64url_decode($payload), true);
+    
+    // Check expiration
+    if (isset($decoded['exp']) && $decoded['exp'] < time()) {
+        return false;
+    }
+
+    return $decoded;
+}
+
+function generateJWT($payload, $secret = "my_secret_key") {
+    if (!isset($payload['exp'])) {
+        $payload['exp'] = time() + (60 * 60); // 1 hour default
+    }
+    return createJWT($payload, $secret);
 }
 ?>
