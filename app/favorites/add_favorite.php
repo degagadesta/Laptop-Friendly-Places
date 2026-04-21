@@ -18,7 +18,7 @@ if (!$place_id) {
 }
 
 try {
-    // ✅ Check if place exists
+    //  Check if place exists
     $stmt = $conn->prepare("SELECT id FROM places WHERE id = :id");
     $stmt->bindParam(':id', $place_id);
     $stmt->execute();
@@ -31,7 +31,7 @@ try {
         exit;
     }
 
-    // ✅ Check duplicate
+    //  Check duplicate
     $stmt = $conn->prepare("SELECT id FROM favorites WHERE user_id = :user_id AND place_id = :place_id");
     $stmt->execute([
         ':user_id' => $user['user_id'],
@@ -46,7 +46,7 @@ try {
         exit;
     }
 
-    // ✅ Insert
+    //  Insert
     $stmt = $conn->prepare("
         INSERT INTO favorites (user_id, place_id)
         VALUES (:user_id, :place_id)
