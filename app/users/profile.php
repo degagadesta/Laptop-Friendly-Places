@@ -14,7 +14,6 @@ if (!$email || !$password) {
     exit;
 }
 
-/* Find user */
 $stmt = $conn->prepare("SELECT * FROM users WHERE email = ?");
 $stmt->execute([$email]);
 
