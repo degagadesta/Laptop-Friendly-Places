@@ -1,7 +1,16 @@
 <?php
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
 header("Content-Type: application/json");
 
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
 require_once "../../config/db.php";
+require_once "jwt.php";
 
 $data = json_decode(file_get_contents("php://input"), true);
 
@@ -14,23 +23,46 @@ if (!$name || !$email || !$password) {
     exit;
 }
 
-// check existing email
+/* Check if user exists */
 $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
 $stmt->execute([$email]);
 
 if ($stmt->fetch()) {
-    echo json_encode(["error" => "Email already exists"]);
+    echo json_encode(["error" => "User already exists"]);
     exit;
 }
 
-// hash password
-$hashedPassword = password_hash($password, PASSWORD_BCRYPT);
+/* Hash password */
+$hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-// insert user
-$stmt = $conn->prepare("INSERT INTO users (name, email, password) VALUES (?, ?, ?)");
+/* Insert user */
+$stmt = $conn->prepare("
+    INSERT INTO users (name, email, password)
+    VALUES (?, ?, ?)
+");
+
 $stmt->execute([$name, $email, $hashedPassword]);
 
+$userId = $conn->lastInsertId();
+
+/* Create JWT for auto-login */
+$payload = [
+    "id" => $userId,
+    "email" => $email,
+    "role" => 'user',
+    "exp" => time() + (60 * 60) // 1 hour
+];
+
+$token = generateJWT($payload);
+
 echo json_encode([
-    "message" => "User registered successfully"
+    "message" => "User registered successfully",
+    "token" => $token,
+    "user" => [
+        "id" => $userId,
+        "name" => $name,
+        "email" => $email,
+        "role" => 'user'
+    ]
 ]);
 ?>
