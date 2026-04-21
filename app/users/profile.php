@@ -34,7 +34,7 @@ $payload = [
     "exp" => time() + (60 * 60) // 1 hour
 ];
 
-$token = createJWT($payload, $secret);
+$token = generateJWT($payload, $secret);
 
 echo json_encode([
     "message" => "Login successful",
