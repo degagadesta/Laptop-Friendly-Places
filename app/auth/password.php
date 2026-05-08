@@ -15,7 +15,6 @@ require_once "./auth.middleware.php";
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? '';
 
-// Forgot Password - Request reset token
 if ($method === 'POST' && $action === 'forgot') {
     $data = json_decode(file_get_contents("php://input"), true);
     $email = trim($data['email'] ?? '');
@@ -42,12 +41,11 @@ if ($method === 'POST' && $action === 'forgot') {
 
     echo json_encode([
         "message" => "If email exists, reset link will be sent",
-        "reset_token" => $resetToken // Remove in production
+        "reset_token" => $resetToken 
     ]);
     exit;
 }
 
-// Reset Password - Use token to set new password
 if ($method === 'POST' && $action === 'reset') {
     $data = json_decode(file_get_contents("php://input"), true);
     $token = $data['token'] ?? '';
@@ -58,8 +56,12 @@ if ($method === 'POST' && $action === 'reset') {
         exit;
     }
 
-    if (strlen($newPassword) < 6) {
-        echo json_encode(["error" => "Password must be at least 6 characters"]);
+    if (strlen($newPassword) < 8) {
+        echo json_encode(["error" => "Password must be at least 8 characters"]);
+        exit;
+    }
+    if (!preg_match('/[A-Z]/', $newPassword) || !preg_match('/[a-z]/', $newPassword) || !preg_match('/[0-9]/', $newPassword)) {
+        echo json_encode(["error" => "Password must contain uppercase, lowercase, and a number"]);
         exit;
     }
 
@@ -72,7 +74,7 @@ if ($method === 'POST' && $action === 'reset') {
         exit;
     }
 
-    $hashedPassword = password_hash($newPassword, PASSWORD_BCRYPT);
+    $hashedPassword = password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 12]);
     $stmt = $conn->prepare("UPDATE users SET password = ?, reset_token = NULL, reset_token_expiry = NULL WHERE id = ?");
     $stmt->execute([$hashedPassword, $user['id']]);
 
@@ -80,7 +82,6 @@ if ($method === 'POST' && $action === 'reset') {
     exit;
 }
 
-// Change Password - Authenticated user changes password
 if ($method === 'POST' && $action === 'change') {
     $user = authenticate();
 
@@ -93,8 +94,12 @@ if ($method === 'POST' && $action === 'change') {
         exit;
     }
 
-    if (strlen($newPassword) < 6) {
-        echo json_encode(["error" => "New password must be at least 6 characters"]);
+    if (strlen($newPassword) < 8) {
+        echo json_encode(["error" => "New password must be at least 8 characters"]);
+        exit;
+    }
+    if (!preg_match('/[A-Z]/', $newPassword) || !preg_match('/[a-z]/', $newPassword) || !preg_match('/[0-9]/', $newPassword)) {
+        echo json_encode(["error" => "Password must contain uppercase, lowercase, and a number"]);
         exit;
     }
 
@@ -107,7 +112,7 @@ if ($method === 'POST' && $action === 'change') {
         exit;
     }
 
-    $hashedPassword = password_hash($newPassword, PASSWORD_BCRYPT);
+    $hashedPassword = password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 12]);
     $stmt = $conn->prepare("UPDATE users SET password = ? WHERE id = ?");
     $stmt->execute([$hashedPassword, $user['id']]);
 
