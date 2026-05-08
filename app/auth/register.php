@@ -14,12 +14,43 @@ require_once "jwt.php";
 
 $data = json_decode(file_get_contents("php://input"), true);
 
-$name = trim($data['name'] ?? '');
-$email = trim($data['email'] ?? '');
+$name = trim(strip_tags($data['name'] ?? ''));
+$email = trim(filter_var($data['email'] ?? '', FILTER_SANITIZE_EMAIL));
 $password = $data['password'] ?? '';
 
+// Validate required fields
 if (!$name || !$email || !$password) {
     echo json_encode(["error" => "All fields required"]);
+    exit;
+}
+
+// Validate name length
+if (strlen($name) < 2 || strlen($name) > 100) {
+    echo json_encode(["error" => "Name must be between 2 and 100 characters"]);
+    exit;
+}
+
+// Validate email format
+if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    echo json_encode(["error" => "Invalid email format"]);
+    exit;
+}
+
+// Validate password strength: min 8 chars, at least one uppercase, one lowercase, one digit
+if (strlen($password) < 8) {
+    echo json_encode(["error" => "Password must be at least 8 characters"]);
+    exit;
+}
+if (!preg_match('/[A-Z]/', $password)) {
+    echo json_encode(["error" => "Password must contain at least one uppercase letter"]);
+    exit;
+}
+if (!preg_match('/[a-z]/', $password)) {
+    echo json_encode(["error" => "Password must contain at least one lowercase letter"]);
+    exit;
+}
+if (!preg_match('/[0-9]/', $password)) {
+    echo json_encode(["error" => "Password must contain at least one number"]);
     exit;
 }
 
@@ -32,8 +63,8 @@ if ($stmt->fetch()) {
     exit;
 }
 
-/* Hash password */
-$hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+/* Hash password with bcrypt and high cost factor */
+$hashedPassword = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
 
 /* Insert user */
 $stmt = $conn->prepare("
