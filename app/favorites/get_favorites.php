@@ -1,23 +1,19 @@
 <?php
-require_once "db.php";
+require_once("../../config/database.php");
+require_once("../auth/auth.middleware.php");
 
-$db = new Database();
-$conn = $db->connect();
+$user_id = $user["id"];
 
-$user_id = $_GET['user_id'] ?? null;
+$sql = "SELECT p.* FROM places p
+        JOIN favorites f ON p.id = f.place_id
+        WHERE f.user_id = '$user_id'";
 
-if (!$user_id) {
-    echo json_encode(["error" => "User ID required"]);
-    exit;
+$result = $conn->query($sql);
+
+$data = [];
+
+while ($row = $result->fetch_assoc()) {
+    $data[] = $row;
 }
 
-$query = "SELECT * FROM favorites WHERE user_id = :user_id";
-$stmt = $conn->prepare($query);
-
-$stmt->bindParam(":user_id", $user_id);
-$stmt->execute();
-
-$favorites = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-echo json_encode($favorites);
-?>
+echo json_encode($data);

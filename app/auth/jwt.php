@@ -1,50 +1,28 @@
 <?php
-require_once "../../config/env.php";
+$config = require __DIR__ . "/../../config/env.php";
 
-$key = $_ENV['JWT_SECRET'];
-$expiry = $_ENV['JWT_EXPIRY'];
+function generateJWT($user) {
+    global $config;
 
-function base64UrlEncode($data) {
-    return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+    $payload = [
+        "id" => $user["id"],
+        "email" => $user["email"],
+        "exp" => time() + (60 * 60 * 24) // 1 day
+    ];
+
+    return base64_encode(json_encode($payload)) . "." . $config["JWT_SECRET"];
 }
 
-function generateJWT($payload) {
-    global $key, $expiry;
+function verifyJWT($token) {
+    global $config;
 
-    $header = base64UrlEncode(json_encode([
-        "alg" => "HS256",
-        "typ" => "JWT"
-    ]));
+    $parts = explode(".", $token);
+    if (count($parts) !== 2) return false;
 
-    $payload['exp'] = time() + $expiry;
+    $payload = json_decode(base64_decode($parts[0]), true);
 
-    $payload = base64UrlEncode(json_encode($payload));
+    if ($parts[1] !== $config["JWT_SECRET"]) return false;
+    if ($payload["exp"] < time()) return false;
 
-    $signature = base64UrlEncode(
-        hash_hmac("sha256", "$header.$payload", $key, true)
-    );
-
-    return "$header.$payload.$signature";
+    return $payload;
 }
-
-function verifyJWT($jwt) {
-    global $key;
-
-    $parts = explode('.', $jwt);
-    if (count($parts) !== 3) return false;
-
-    list($header, $payload, $signature) = $parts;
-
-    $validSignature = base64UrlEncode(
-        hash_hmac("sha256", "$header.$payload", $key, true)
-    );
-
-    if ($signature !== $validSignature) return false;
-
-    $data = json_decode(base64_decode(strtr($payload, '-_', '+/')), true);
-
-    if ($data['exp'] < time()) return false;
-
-    return $data;
-}
-?>

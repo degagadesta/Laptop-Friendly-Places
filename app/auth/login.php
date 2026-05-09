@@ -1,43 +1,30 @@
 <?php
-header("Content-Type: application/json");
+require_once("../../config/database.php");
+require_once("jwt.php");
 
-require_once "../../config/db.php";
-require_once "./jwt.php";
+$data = json_decode(file_get_contents("php://input"));
 
-$data = json_decode(file_get_contents("php://input"), true);
+$email = $conn->real_escape_string($data->email);
+$password = $data->password;
 
-$email = trim($data['email'] ?? '');
-$password = $data['password'] ?? '';
+$sql = "SELECT * FROM users WHERE email='$email'";
+$result = $conn->query($sql);
 
-if (!$email || !$password) {
-    echo json_encode(["error" => "Email and password required"]);
+if ($result->num_rows === 0) {
+    echo json_encode(["error" => "User not found"]);
     exit;
 }
 
-// find user
-$stmt = $conn->prepare("SELECT * FROM users WHERE email = ?");
-$stmt->execute([$email]);
+$user = $result->fetch_assoc();
 
-$user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if (!$user || !password_verify($password, $user['password'])) {
-    echo json_encode(["error" => "Invalid credentials"]);
+if (!password_verify($password, $user["password"])) {
+    echo json_encode(["error" => "Wrong password"]);
     exit;
 }
 
-// generate token
-$token = generateJWT([
-    "id" => $user['id'],
-    "email" => $user['email']
-]);
+$token = generateJWT($user);
 
 echo json_encode([
-    "message" => "Login successful",
-    "token" => $token,
-    "user" => [
-        "id" => $user['id'],
-        "name" => $user['name'],
-        "email" => $user['email']
-    ]
+    "message" => "Login success",
+    "token" => $token
 ]);
-?>

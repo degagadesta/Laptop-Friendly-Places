@@ -1,36 +1,17 @@
 <?php
-header("Content-Type: application/json");
+require_once("../../config/database.php");
 
-require_once "../../config/db.php";
+$data = json_decode(file_get_contents("php://input"));
 
-$data = json_decode(file_get_contents("php://input"), true);
+$username = $conn->real_escape_string($data->username);
+$email = $conn->real_escape_string($data->email);
+$password = password_hash($data->password, PASSWORD_DEFAULT);
 
-$name = trim($data['name'] ?? '');
-$email = trim($data['email'] ?? '');
-$password = $data['password'] ?? '';
+$sql = "INSERT INTO users (username, email, password)
+        VALUES ('$username', '$email', '$password')";
 
-if (!$name || !$email || !$password) {
-    echo json_encode(["error" => "All fields required"]);
-    exit;
+if ($conn->query($sql)) {
+    echo json_encode(["message" => "User registered"]);
+} else {
+    echo json_encode(["error" => "Registration failed"]);
 }
-
-// check existing email
-$stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
-$stmt->execute([$email]);
-
-if ($stmt->fetch()) {
-    echo json_encode(["error" => "Email already exists"]);
-    exit;
-}
-
-// hash password
-$hashedPassword = password_hash($password, PASSWORD_BCRYPT);
-
-// insert user
-$stmt = $conn->prepare("INSERT INTO users (name, email, password) VALUES (?, ?, ?)");
-$stmt->execute([$name, $email, $hashedPassword]);
-
-echo json_encode([
-    "message" => "User registered successfully"
-]);
-?>

@@ -1,31 +1,15 @@
 <?php
-require_once "db.php";
+require_once("../../config/database.php");
+require_once("../auth/auth.middleware.php");
 
-$db = new Database();
-$conn = $db->connect();
+$data = json_decode(file_get_contents("php://input"));
 
-$data = json_decode(file_get_contents("php://input"), true);
+$user_id = $user["id"];
+$place_id = $data->place_id;
 
-$user_id = $data['user_id'] ?? null;
-$item_id = $data['item_id'] ?? null;
+$sql = "INSERT INTO favorites (user_id, place_id)
+        VALUES ('$user_id', '$place_id')";
 
-if (!$user_id || !$item_id) {
-    echo json_encode(["error" => "Missing data"]);
-    exit;
-}
+$conn->query($sql);
 
-try {
-    $query = "INSERT INTO favorites (user_id, item_id) VALUES (:user_id, :item_id)";
-    $stmt = $conn->prepare($query);
-
-    $stmt->bindParam(":user_id", $user_id);
-    $stmt->bindParam(":item_id", $item_id);
-
-    $stmt->execute();
-
-    echo json_encode(["message" => "Added to favorites"]);
-
-} catch (PDOException $e) {
-    echo json_encode(["error" => "Already exists or failed"]);
-}
-?>
+echo json_encode(["message" => "Added"]);
