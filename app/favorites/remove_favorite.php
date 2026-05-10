@@ -1,29 +1,41 @@
 <?php
-require_once "db.php";
+header("Content-Type: application/json");
 
-$db = new Database();
-$conn = $db->connect();
+require_once "../../config/db.php";
+require_once "../auth/auth.middleware.php";
+
+$user = authenticate(); // 🔐
 
 $data = json_decode(file_get_contents("php://input"), true);
+$place_id = $data['place_id'] ?? null;
 
-$user_id = $data['user_id'] ?? null;
-$item_id = $data['item_id'] ?? null;
-
-if (!$user_id || !$item_id) {
-    echo json_encode(["error" => "Missing data"]);
+if (!$place_id) {
+    echo json_encode([
+        "success" => false,
+        "message" => "place_id is required"
+    ]);
     exit;
 }
 
+try {
+    $stmt = $conn->prepare("
+        DELETE FROM favorites
+        WHERE user_id = :user_id AND place_id = :place_id
+    ");
 
-$query = "DELETE FROM favorites WHERE user_id = :user_id AND item_id = :item_id";
-$stmt = $conn->prepare($query);
+    $stmt->execute([
+        ':user_id' => $user['user_id'],
+        ':place_id' => $place_id
+    ]);
 
-$stmt->bindParam(":user_id", $user_id);
-$stmt->bindParam(":item_id", $item_id);
+    echo json_encode([
+        "success" => true,
+        "message" => "Removed from favorites"
+    ]);
 
-if ($stmt->execute()) {
-    echo json_encode(["message" => "Removed from favorites"]);
-} else {
-    echo json_encode(["error" => "Failed to remove"]);
+} catch (PDOException $e) {
+    echo json_encode([
+        "success" => false,
+        "message" => "Database error"
+    ]);
 }
-?>
