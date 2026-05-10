@@ -14,6 +14,7 @@ if (!$user_id || !$item_id) {
     exit;
 }
 
+
 $query = "DELETE FROM favorites WHERE user_id = :user_id AND item_id = :item_id";
 $stmt = $conn->prepare($query);
 

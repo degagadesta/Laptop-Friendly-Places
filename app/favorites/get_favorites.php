@@ -11,6 +11,7 @@ if (!$user_id) {
     exit;
 }
 
+
 $query = "SELECT * FROM favorites WHERE user_id = :user_id";
 $stmt = $conn->prepare($query);
 

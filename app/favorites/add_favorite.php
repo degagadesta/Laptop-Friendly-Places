@@ -4,6 +4,7 @@ require_once "db.php";
 $db = new Database();
 $conn = $db->connect();
 
+
 $data = json_decode(file_get_contents("php://input"), true);
 
 $user_id = $data['user_id'] ?? null;
