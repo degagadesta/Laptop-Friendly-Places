@@ -2,9 +2,13 @@
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, DELETE');
-header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
 require_once '../../../config/db.php';
+require_once '../../auth/admin.middleware.php';
+
+// Require admin authentication
+$admin = requireAdmin();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' && $_SERVER['REQUEST_METHOD'] !== 'DELETE') {
     echo json_encode(['success' => false, 'message' => 'Only POST or DELETE method allowed']);
