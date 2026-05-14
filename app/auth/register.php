@@ -11,6 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once "../../config/db.php";
 require_once "jwt.php";
+require_once "mailer.php";
 
 $data = json_decode(file_get_contents("php://input"), true);
 
@@ -66,34 +67,33 @@ if ($stmt->fetch()) {
 /* Hash password with bcrypt and high cost factor */
 $hashedPassword = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
 
-/* Insert user */
-$stmt = $conn->prepare("
-    INSERT INTO users (name, email, password)
-    VALUES (?, ?, ?)
-");
+/* Generate email verification token */
+$verificationToken = bin2hex(random_bytes(32));
+$tokenExpiry = date('Y-m-d H:i:s', strtotime('+24 hours'));
 
-$stmt->execute([$name, $email, $hashedPassword]);
+/* Insert user as unverified */
+$stmt = $conn->prepare("
+    INSERT INTO users (name, email, password, email_verified, verification_token, verification_token_expiry)
+    VALUES (?, ?, ?, 0, ?, ?)
+");
+$stmt->execute([$name, $email, $hashedPassword, $verificationToken, $tokenExpiry]);
 
 $userId = $conn->lastInsertId();
 
-/* Create JWT for auto-login */
-$payload = [
-    "id" => $userId,
-    "email" => $email,
-    "role" => 'user',
-    "exp" => time() + (60 * 60) // 1 hour
-];
+/* Send verification email */
+$emailSent = sendVerificationEmail($email, $name, $verificationToken);
 
-$token = generateJWT($payload);
+if (!$emailSent) {
+    // Still registered but warn about email failure
+    echo json_encode([
+        "message" => "Account created but verification email could not be sent. Contact support.",
+        "user" => ["id" => $userId, "name" => $name, "email" => $email]
+    ]);
+    exit;
+}
 
 echo json_encode([
-    "message" => "User registered successfully",
-    "token" => $token,
-    "user" => [
-        "id" => $userId,
-        "name" => $name,
-        "email" => $email,
-        "role" => 'user'
-    ]
+    "message" => "Registration successful. Please check your email to verify your account before logging in.",
+    "user" => ["id" => $userId, "name" => $name, "email" => $email]
 ]);
 ?>
