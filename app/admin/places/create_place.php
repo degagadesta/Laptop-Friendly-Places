@@ -2,11 +2,18 @@
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST');
-header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
+/** @var PDO $conn */
 require_once '../../../config/db.php';
+require_once '../../auth/admin.middleware.php';
+
+// Require admin authentication
+$admin = requireAdmin();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+
     echo json_encode(['success' => false, 'message' => 'Only POST method allowed']);
     exit;
 }
@@ -16,6 +23,7 @@ try {
     
     // Validate required fields
     if (!isset($input['name']) || empty(trim($input['name']))) {
+        http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Name is required']);
         exit;
     }
@@ -67,6 +75,7 @@ try {
         ':tag' => $tag
     ]);
     
+    http_response_code(201);
     echo json_encode([
         'success' => true,
         'message' => 'Place created successfully',
@@ -74,8 +83,10 @@ try {
     ]);
     
 } catch (PDOException $e) {
+    http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Database error occurred']);
 } catch (Exception $e) {
+    http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'An error occurred']);
 }
 ?>

@@ -2,9 +2,14 @@
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST');
-header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
+/** @var PDO $conn */
 require_once '../../../config/db.php';
+require_once '../../auth/admin.middleware.php';
+
+// Require admin authentication
+$admin = requireAdmin();
 
 try {
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -37,6 +42,8 @@ try {
         $stmt->execute($params);
         $reports = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
+        http_response_code(200);
+
         echo json_encode([
             'success' => true,
             'data' => $reports
@@ -47,6 +54,8 @@ try {
         $input = json_decode(file_get_contents('php://input'), true);
         
         if (!isset($input['report_id']) || !isset($input['status'])) {
+            http_response_code(400);
+
             echo json_encode([
                 'success' => false,
                 'message' => 'Missing report_id or status'
@@ -56,6 +65,7 @@ try {
         
         $validStatuses = ['pending', 'resolved', 'rejected'];
         if (!in_array($input['status'], $validStatuses)) {
+            http_response_code(400);
             echo json_encode([
                 'success' => false,
                 'message' => 'Invalid status. Valid statuses: ' . implode(', ', $validStatuses)
@@ -80,11 +90,13 @@ try {
         $result = $stmt->execute($params);
         
         if ($stmt->rowCount() > 0) {
+            http_response_code(200);
             echo json_encode([
                 'success' => true,
                 'message' => 'Report status updated successfully'
             ]);
         } else {
+            http_response_code(404);
             echo json_encode([
                 'success' => false,
                 'message' => 'Report not found'
@@ -93,11 +105,14 @@ try {
     }
     
 } catch (PDOException $e) {
+    http_response_code(500);
+    
     echo json_encode([
         'success' => false,
         'message' => 'Database error occurred'
     ]);
 } catch (Exception $e) {
+    http_response_code(500);
     echo json_encode([
         'success' => false,
         'message' => 'An error occurred'

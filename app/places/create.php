@@ -1,21 +1,25 @@
 <?php
 header("Content-Type: application/json");
-session_start();
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: POST");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
 
 require_once "../../config/db.php";
+require_once "../auth/auth.middleware.php";
 
-/* ===== USE SESSION INSTEAD OF POST ===== */
-$user_id = $_SESSION['user_id'] ?? null;
+// Require authentication
+$user = authenticate();
+$user_id = $user['id'];
 
 $name = trim($_POST['name'] ?? '');
 $description = trim($_POST['description'] ?? '');
 $location = trim($_POST['location'] ?? '');
 
 /* ===== VALIDATION ===== */
-// if (!$name || !$location || !$user_id) {
-//     echo json_encode(["error" => "Missing required fields or not logged in"]);
-//     exit;
-// }
+if (!$name || !$location) {
+    echo json_encode(["error" => "Name and location are required"]);
+    exit;
+}
 
 /* ===== HANDLE IMAGE ===== */
 $imagePath = null;

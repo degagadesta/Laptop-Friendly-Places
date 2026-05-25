@@ -1,5 +1,15 @@
 <?php
-include("../config/database.php");
+header("Content-Type: application/json");
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: POST");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+
+require_once "../../config/db.php";
+require_once "../auth/auth.middleware.php";
+
+// Require authentication
+$user = authenticate();
+$user_id = $user['id'];
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
@@ -12,6 +22,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $wifi = $_POST['wifi'] ?? '';
     $power = $_POST['power'] ?? '';
     $service = $_POST['service'] ?? '';
+    
+    // Validation
+    if (!$name || !$category) {
+        echo json_encode(["error" => "Name and category are required"]);
+        exit;
+    }
 
     // ---------- IMAGE UPLOAD ----------
     $imagePaths = [];
@@ -43,11 +59,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     // ---------- INSERT ----------
     $stmt = $conn->prepare("INSERT INTO places 
-        (name, category, description, latitude, longitude, rating, wifi_rating, power_rating, service_rating, images, video, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')");
+        (name, category, description, latitude, longitude, rating, wifi_rating, power_rating, service_rating, images, video, status, created_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)");
 
     $stmt->bind_param(
-        "sssddisssss",
+        "sssddisssssi",
         $name,
         $category,
         $description,
@@ -58,13 +74,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $power,
         $service,
         $imagesJSON,
-        $videoPath
+        $videoPath,
+        $user_id
     );
 
     if ($stmt->execute()) {
-        echo "Place submitted (waiting for admin approval)";
+        echo json_encode(["message" => "Place submitted (waiting for admin approval)"]);
     } else {
-        echo "Error: " . $stmt->error;
+        echo json_encode(["error" => $stmt->error]);
     }
 
     $stmt->close();
