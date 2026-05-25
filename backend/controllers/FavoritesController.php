@@ -21,9 +21,13 @@ class FavoritesController {
     public function add(): void {
         $user    = $this->auth->authenticate();
         $data    = json_decode(file_get_contents("php://input"), true);
-        $placeId = (int) ($data['place_id'] ?? $data['item_id'] ?? 0);
 
-        if (!$placeId) { $this->json(["error" => "Place ID required"], 400); return; }
+        if(!isset($data['place_id'])){
+            $this->json(["error" => "Place ID required"], 400);
+            return;
+        }   
+
+        $placeId = (int) ($data['place_id'] ?? $data['item_id']);
 
         try {
             $this->favorites->add($user['id'], $placeId);
@@ -36,9 +40,10 @@ class FavoritesController {
     public function remove(): void {
         $user    = $this->auth->authenticate();
         $data    = json_decode(file_get_contents("php://input"), true);
-        $placeId = (int) ($data['place_id'] ?? $data['item_id'] ?? 0);
 
-        if (!$placeId) { $this->json(["error" => "Place ID required"], 400); return; }
+        if (!isset($data['place_id'])) { $this->json(["error" => "Place ID required"], 400); return; }
+
+        $placeId = (int) ($data['place_id'] ?? $data['item_id']);
 
         $this->favorites->remove($user['id'], $placeId);
         $this->json(["message" => "Removed from favorites"]);

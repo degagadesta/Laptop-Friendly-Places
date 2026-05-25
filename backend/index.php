@@ -44,11 +44,11 @@ match (true) {
 
     // Places
     $uri === '/places'                    && $method === 'GET'  => $places->getAll(),
-    $uri === '/places'                    && $method === 'POST' => $places->create(),
+    // $uri === '/places'                    && $method === 'POST' => $places->create(),
     $uri === '/places/contribute'         && $method === 'POST' => $places->contribute(),
     $uri === '/places/detail'             && $method === 'GET'  => $places->getById(),
-    $uri === '/places/update'             && $method === 'PUT'  => $places->update(),
-    $uri === '/places/delete'             && $method === 'DELETE' => $places->delete(),
+    // $uri === '/places/update'             && $method === 'PUT'  => $places->update(),
+    // $uri === '/places/delete'             && $method === 'DELETE' => $places->delete(),
 
     // Favorites
     $uri === '/favorites'                 && $method === 'GET'  => $favs->get(),
@@ -63,13 +63,13 @@ match (true) {
     $uri === '/reports'                   && $method === 'POST' => $reports->create(),
 
     // Admin
-    $uri === '/admin/users'               && $method === 'GET'  => $admin->getUsers(),
-    $uri === '/admin/users/block'         && $method === 'POST' => $admin->blockUser(),
-    $uri === '/admin/places'              && $method === 'GET'  => $admin->getPlaces(),
-    $uri === '/admin/places/approve'      && $method === 'POST' => $admin->approvePlace(),
-    $uri === '/admin/places/delete'       && $method === 'DELETE' => $admin->deletePlace(),
-    $uri === '/admin/reports'             && $method === 'GET'  => $admin->getReports(),
-    $uri === '/admin/reports'             && $method === 'POST' => $admin->updateReport(),
+    $uri === '/admin/users' && $method === 'GET'  => $admin->getAllUsers(),
+    $uri === '/admin/users/block' && $method === 'POST' => $admin->blockUser(),
+    $uri === '/admin/places' && $method === 'GET'  => $admin->getAllPlaces(),
+    $uri === '/admin/places/approve' && $method === 'POST' => $admin->approvePlace(),
+    $uri === '/admin/places/delete' && $method === 'DELETE' => $admin->deletePlace(),
+    $uri === '/admin/reports' && $method === 'GET'  => $admin->getReports(),
+    $uri === '/admin/reports' && $method === 'POST' => $admin->updateReportStatus(),
 
     default => (function() {
         http_response_code(404);

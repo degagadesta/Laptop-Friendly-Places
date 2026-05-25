@@ -6,89 +6,150 @@ require_once __DIR__ . '/../models/ReportModel.php';
 require_once __DIR__ . '/../middleware/AuthMiddleware.php';
 require_once __DIR__ . '/../services/JwtService.php';
 
+/* 
+Methods for admin: 
+-> get all users 
+-> block user
+-> get places by id or all places
+-> approve place
+-> delete a place
+-> get all reports
+-> update report status 
+*/
 class AdminController {
-    private UserModel $users;
-    private PlaceModel $places;
-    private ReportModel $reports;
-    private AuthMiddleware $auth;
+    // dependecies
+    private UserModel $user_model;
+    private ReportModel $report_model;
+    private PlaceModel $place_model;
+    private AuthMiddleware $auth_middleware;
 
-    public function __construct(PDO $conn) {
-        $this->users   = new UserModel($conn);
-        $this->places  = new PlaceModel($conn);
-        $this->reports = new ReportModel($conn);
-        $this->auth    = new AuthMiddleware(new JwtService());
+    public function __construct(PDO $conn)
+    {
+        $this->user_model = new UserModel(conn: $conn);
+        $this->report_model = new ReportModel(conn: $conn);
+        $this->place_model = new PlaceModel(conn:$conn);
+        $this->auth_middleware = new AuthMiddleware(new JwtService());
     }
 
-    public function getUsers(): void {
-        $this->auth->requireRole(['admin']);
-        $this->json(["users" => $this->users->getAll()]);
+    // get all users
+    public function getAllUsers(): void{
+        $this->auth_middleware->requireRole(['admin']);
+
+        $data = $this->user_model->getAll();
+        $this->response(content: ['users' => $data]);
     }
 
     public function blockUser(): void {
-        $this->auth->requireRole(['admin']);
-        $data    = json_decode(file_get_contents("php://input"), true);
-        $id      = (int) ($data['user_id'] ?? 0);
+        $this->auth_middleware->requireRole(['admin']);
+        $data = json_decode(file_get_contents("php://input"), true);
         $blocked = (bool) ($data['blocked'] ?? true);
 
-        if (!$id) { $this->json(["error" => "User ID required"], 400); return; }
+        if (!isset($data['user_id'])) { $this->response(["error" => "User ID required"], 400); return; }
 
-        $this->users->setBlocked($id, $blocked);
-        $this->json(["message" => $blocked ? "User blocked" : "User unblocked"]);
+        $id = (int) ($data['user_id'] ?? 0);
+
+
+        $is_user = $this->user_model->findById(id: $id);
+        if(!$is_user){
+            $this->response(content:['error: ' => 'User not found!'], statusCode: 404);
+            return;
+        }
+
+        $this->user_model->setBlocked($id, $blocked);
+        $this->response(["message" => $blocked ? "User blocked" : "User unblocked"]);
     }
 
-    public function getPlaces(): void {
-        $this->auth->requireRole(['admin']);
-        $this->json(["success" => true, "places" => $this->places->getAll()]);
+    // get all reports or by id
+    public function getReports(): void{
+        $this->auth_middleware->requireRole(['admin']);
+        $place_id = $_GET['place_id'] ?? null;
+        $status = $_GET['status'] ?? null;
+
+        $data = $this->report_model->getAll(placeId: $place_id, status: $status);
+        $this->response(content: ['places' => $data]);
+    }
+
+    // update report status
+    public function updateReportStatus(): void {
+        $this->auth_middleware->requireRole(['admin']);
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true);
+
+        $place_id = $data['place_id'];
+        $status = $data['status'];
+
+        if (!isset($place_id) || !isset($status)){
+            $this->response(content: ['error' => 'Invalid request format'], statusCode: 400);
+            return;
+        }
+
+        $vaild_status = ['pending', 'resolved', 'rejected'];
+        if(!in_array($status, $vaild_status)){
+            $this->response(content: ["error" => "Invalid status"], statusCode: 400); return;
+        }
+
+        $is_updated = $this->report_model->updateStatus(id: $place_id, status: $status);
+        $this->response(
+            $is_updated ? ['success' => true ,'message' => 'Report updated!'] : ['success' => false, 'message'=> 'Report update failed!'],
+            $is_updated ? 200 : 400
+        );
+    }
+
+    public function getAllPlaces(): void{
+        $this->auth_middleware->requireRole(['admin']);
+
+        $data = $this->place_model->getAll();
+        $this->response(content: ['success' => true ,'places' => $data]);
     }
 
     public function approvePlace(): void {
-        $this->auth->requireRole(['admin']);
-        $data = json_decode(file_get_contents("php://input"), true);
-        $id   = (int) ($data['place_id'] ?? 0);
+        $this->auth_middleware->requireRole(['admin']);
 
-        if (!$id) { $this->json(["error" => "Place ID required"], 400); return; }
+        $input = json_decode(file_get_contents('php://input'), true);
 
-        $this->places->approve($id);
-        $this->json(["message" => "Place approved"]);
-    }
+        if(!isset($input['place_id'])){
+            $this->response(content: ['error' => 'Invalid format. Place id is required'], statusCode: 400);
+            return;
+        }
+        
+        $id = (int) ($input['place_id'] ?? 0);
 
-    public function deletePlace(): void {
-        $this->auth->requireRole(['admin']);
-        $data = json_decode(file_get_contents("php://input"), true);
-        $id   = (int) ($data['place_id'] ?? 0);
 
-        if (!$id) { $this->json(["error" => "Place ID required"], 400); return; }
-
-        $this->places->delete($id);
-        $this->json(["message" => "Place deleted"]);
-    }
-
-    public function getReports(): void {
-        $this->auth->requireRole(['admin']);
-        $status  = $_GET['status'] ?? null;
-        $placeId = $_GET['place_id'] ?? null;
-        $this->json(["success" => true, "data" => $this->reports->getAll($status, $placeId)]);
-    }
-
-    public function updateReport(): void {
-        $this->auth->requireRole(['admin']);
-        $data   = json_decode(file_get_contents("php://input"), true);
-        $id     = $data['report_id'] ?? '';
-        $status = $data['status'] ?? '';
-
-        $valid = ['pending', 'resolved', 'rejected'];
-        if (!$id || !in_array($status, $valid)) {
-            $this->json(["error" => "Invalid report_id or status"], 400); return;
+        $place_found = $this->place_model->findById(id: $id);
+        if(!$place_found){
+            $this->response(content: ['error' => 'Place not found'], statusCode: 404);
+            return;
         }
 
-        $updated = $this->reports->updateStatus($id, $status);
-        $this->json($updated
-            ? ["success" => true, "message" => "Report updated"]
-            : ["success" => false, "message" => "Report not found"], $updated ? 200 : 404);
+        $this->place_model->approve(id: $id);
+        $this -> response(content: ['success' => true, 'message' => 'Place approved successfully!']);
     }
 
-    private function json(array $data, int $status = 200): void {
-        http_response_code($status);
-        echo json_encode($data);
+    public function deletePlace(): void{
+        $this->auth_middleware->requireRole(['admin']);
+
+        $input = json_decode(file_get_contents('php://input'), true);
+
+        if(!isset($input['place_id'])){
+            $this->response(content: ['error' => 'Invalid format. Place id is required'], statusCode: 400);
+            return;
+        }
+
+        $id = (int)($input['place_id'] ?? 0);
+
+        $place_found = $this->place_model->findById(id: $id);
+        if(!$place_found){
+            $this->response(content: ['error' => 'Place not found'], statusCode: 404);
+            return;
+        }
+
+        $this->place_model->delete(id: $id);
+
+        $this->response(content:['success' => true, 'message: ' => 'Place deleted successfuly!']);
+    }
+
+    private function response(array $content, int $statusCode = 200): void{
+        http_response_code($statusCode);
+        echo json_encode($content);
     }
 }

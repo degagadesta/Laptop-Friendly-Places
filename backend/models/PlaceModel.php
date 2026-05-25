@@ -28,6 +28,8 @@ class PlaceModel {
             $data['name'],
             $data['description'],
             $data['location'],
+            $data['image'] ?? null,
+            $data['video'] ?? null,
             $data['wifi_rating'],
             $data['power_rating'],
             $data['service_rating'],
@@ -36,21 +38,21 @@ class PlaceModel {
         return (int) $this->conn->lastInsertId();
     }
 
-    public function createWithMedia(array $data): int {
-        $stmt = $this->conn->prepare("
-            INSERT INTO places (name, description, location, image, video, created_by)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ");
-        $stmt->execute([
-            $data['name'],
-            $data['description'],
-            $data['location'],
-            $data['image'] ?? null,
-            $data['video'] ?? null,
-            $data['created_by'],
-        ]);
-        return (int) $this->conn->lastInsertId();
-    }
+    // public function createWithMedia(array $data): int {
+    //     $stmt = $this->conn->prepare("
+    //         INSERT INTO places (name, description, location, image, video, created_by)
+    //         VALUES (?, ?, ?, ?, ?, ?)
+    //     ");
+    //     $stmt->execute([
+    //         $data['name'],
+    //         $data['description'],
+    //         $data['location'],
+    //         $data['image'] ?? null,
+    //         $data['video'] ?? null,
+    //         $data['created_by'],
+    //     ]);
+    //     return (int) $this->conn->lastInsertId();
+    // }
 
     public function update(int $id, string $name, string $description, string $location): void {
         $this->conn->prepare("
