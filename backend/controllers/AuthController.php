@@ -98,7 +98,7 @@ class AuthController {
 
         $token = $this->jwt->generate([
             "id" => $user['id'], "email" => $user['email'],
-            "role" => $user['role'] ?? 'user', "exp" => time() + 3600
+            "role" => $user['role'] ?? 'user', "exp" => time() + 86400 // 24 hours for testing
         ]);
 
         $this->json([
@@ -110,14 +110,50 @@ class AuthController {
 
     public function verifyEmail(): void {
         $token = trim($_GET['token'] ?? '');
-        if (!$token) { $this->json(["error" => "Token required"], 400); return; }
+        
+        // Get frontend URL from env or use default
+        $frontendUrl = $_ENV['FRONTEND_URL'] ?? 'http://127.0.0.1:5500';
+        
+        if (!$token) {
+            // Redirect to login with error
+            header('Location: ' . $frontendUrl . '/frontend/pages/login.html?error=token_required');
+            exit;
+        }
 
         $user = $this->users->findByVerificationToken($token);
-        if (!$user) { $this->json(["error" => "Invalid or expired token"], 400); return; }
-        if ($user['email_verified']) { $this->json(["message" => "Email already verified."]); return; }
+        if (!$user) {
+            // Redirect to login with error
+            header('Location: ' . $frontendUrl . '/frontend/pages/login.html?error=invalid_token');
+            exit;
+        }
 
+        if ($user['email_verified']) {
+            // Already verified, redirect to login with success message
+            header('Location: ' . $frontendUrl . '/frontend/pages/login.html?verified=already');
+            exit;
+        }
+
+        // Verify the email
         $this->users->verifyEmail($user['id']);
-        $this->json(["message" => "Email verified successfully. You can now log in."]);
+
+        // Generate JWT token for auto-login
+        $jwtToken = $this->jwt->generate([
+            "id" => $user['id'],
+            "email" => $user['email'],
+            "role" => $user['role'] ?? 'user',
+            "exp" => time() + 86400 // 24 hours
+        ]);
+
+        // Redirect to home page with token and success message
+        $redirectUrl = $frontendUrl . '/frontend/pages/home.html?verified=success&token=' . urlencode($jwtToken) . '&user=' . urlencode(json_encode([
+            'id' => $user['id'],
+            'name' => $user['name'],
+            'email' => $user['email'],
+            'role' => $user['role'] ?? 'user'
+        ]));
+
+        header('Location: ' . $redirectUrl);
+        exit;
     }
 
     public function resendVerification(): void {

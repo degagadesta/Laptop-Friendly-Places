@@ -1,0 +1,23 @@
+/* Dark mode – background ONLY */
+body.dark-mode {
+    background-color: #121212;
+}
+
+/* Override backgrounds of layout elements */
+body.dark-mode header,
+body.dark-mode main,
+body.dark-mode section,
+body.dark-mode div,
+body.dark-mode nav,
+body.dark-mode footer {
+    background-color: #121212;
+}
+
+/* EXCLUDE media elements */
+body.dark-mode img,
+body.dark-mode video,
+body.dark-mode iframe,
+body.dark-mode canvas {
+    background-color: transparent !important;
+}
+

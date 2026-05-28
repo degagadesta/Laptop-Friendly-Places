@@ -44,6 +44,8 @@ match (true) {
 
     // Places
     $uri === '/places'                    && $method === 'GET'  => $places->getAll(),
+    $uri === '/places/new'                && $method === 'GET'  => $places->getNew(),
+    $uri === '/places/popular'            && $method === 'GET'  => $places->getPopular(),
     // $uri === '/places'                    && $method === 'POST' => $places->create(),
     $uri === '/places/contribute'         && $method === 'POST' => $places->contribute(),
     $uri === '/places/detail'             && $method === 'GET'  => $places->getById(),
@@ -58,6 +60,7 @@ match (true) {
     // Users
     $uri === '/users/profile'             && $method === 'GET'  => $users->getProfile(),
     $uri === '/users/profile'             && $method === 'PUT'  => $users->updateProfile(),
+    $uri === '/users/top-contributors'    && $method === 'GET'  => $users->getTopContributors(),
 
     // Reports
     $uri === '/reports'                   && $method === 'POST' => $reports->create(),
@@ -66,6 +69,7 @@ match (true) {
     $uri === '/admin/users' && $method === 'GET'  => $admin->getAllUsers(),
     $uri === '/admin/users/block' && $method === 'POST' => $admin->blockUser(),
     $uri === '/admin/places' && $method === 'GET'  => $admin->getAllPlaces(),
+    $uri === '/admin/places/pending' && $method === 'GET'  => $admin->getPendingPlaces(),
     $uri === '/admin/places/approve' && $method === 'POST' => $admin->approvePlace(),
     $uri === '/admin/places/delete' && $method === 'DELETE' => $admin->deletePlace(),
     $uri === '/admin/reports' && $method === 'GET'  => $admin->getReports(),
