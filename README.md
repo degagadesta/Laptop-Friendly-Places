@@ -40,9 +40,11 @@ The frontend structure is already prepared, and the backend implementation using
 
 ## Team Members
 
-- Amen Teshome — ETS 0165/16  
-- Amir Abduljelil — ETS 0167/16  
-- Betsegaw Tesfaye — ETS 0285/16  
-- Biniyam Kinfe — ETS 0304/16  
-- Binyam Yalew — ETS 0297/15  
-- Degaga Desta — ETS 0352/16
+| Name | Student ID | GitHub |
+|------|-----------|--------|
+| Amen Teshome | ETS 0165/16 | [@ATRam3](https://github.com/ATRam3) |
+| Amir Abduljelil | ETS 0167/16 | [@AmirA24-art](https://github.com/AmirA24-art) |
+| Betsegaw Tesfaye | ETS 0285/16 | [@btsquare00](https://github.com/btsquare00) |
+| Biniyam Kinfe | ETS 0304/16 | [@biniKin](https://github.com/biniKin) |
+| Binyam Yalew | ETS 0297/15 | [@BinyamYalew](https://github.com/BinyamYalew) |
+| Degaga Desta | ETS 0352/16 | [@degagadesta](https://github.com/degagadesta) |

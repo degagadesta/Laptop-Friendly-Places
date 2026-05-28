@@ -1,0 +1,13 @@
+{
+    "name": "hp/laptop-friendly-places",
+    "autoload": {
+        "psr-4": {
+            "Hp\\LaptopFriendlyPlaces\\": "src/"
+        }
+    },
+    "require": {
+        "vlucas/phpdotenv": "^5.6",
+        "kreait/firebase-php": "^5.26",
+        "phpmailer/phpmailer": "^7.0"
+    }
+}
