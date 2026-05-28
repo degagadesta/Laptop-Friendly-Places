@@ -106,4 +106,18 @@ class UserModel {
         $stmt->execute([$ip, $windowStart]);
         return (int) $stmt->fetchColumn();
     }
+
+    public function getTopContributors(int $limit = 10): array {
+        $stmt = $this->conn->prepare("
+            SELECT u.id, u.name, u.email, u.role, u.created_at, 
+                   COUNT(p.id) as places_count
+            FROM users u 
+            LEFT JOIN places p ON u.id = p.created_by AND p.status = 'approved'
+            GROUP BY u.id 
+            ORDER BY places_count DESC, u.name ASC
+            LIMIT " . (int)$limit
+        );
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

@@ -35,6 +35,11 @@ class UsersController {
         $this->json(["message" => "Profile updated successfully", "user" => $user]);
     }
 
+    public function getTopContributors(): void {
+        $contributors = $this->users->getTopContributors(10); // Get top 10 contributors
+        $this->json(["contributors" => $contributors]);
+    }
+
     private function json(array $data, int $status = 200): void {
         http_response_code($status);
         echo json_encode($data);
