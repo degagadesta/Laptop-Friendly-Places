@@ -17,16 +17,17 @@ class ReportController {
     }
 
     public function create(): void {
+        $user = $this->auth->authenticate();
         $input = json_decode(file_get_contents('php://input'), true);
 
-        $required = ['message', 'place_id', 'reason', 'reported_by'];
+        $required = ['message', 'place_id', 'reason'];
         foreach ($required as $field) {
-            if (empty(trim($input[$field] ?? ''))) {
+            if (empty(trim((string) ($input[$field] ?? '')))) {
                 $this->json(['success' => false, 'message' => "Missing field: $field"], 400); return;
             }
         }
 
-        if (!in_array($input['reason'], ReportModel::VALID_REASONS)) {
+        if (!in_array($input['reason'], ReportModel::VALID_REASONS, true)) {
             $this->json(['success' => false, 'message' => 'Invalid reason'], 400); return;
         }
 
@@ -35,10 +36,10 @@ class ReportController {
         }
 
         $report = $this->reports->create([
-            'message'     => trim($input['message']),
-            'place_id'    => $input['place_id'],
+            'message'     => trim((string) $input['message']),
+            'place_id'    => (int) $input['place_id'],
             'reason'      => $input['reason'],
-            'reported_by' => $input['reported_by'],
+            'reported_by' => (int) $user['id'],
         ]);
 
         $this->json(['success' => true, 'message' => 'Report created successfully', 'data' => $report], 201);

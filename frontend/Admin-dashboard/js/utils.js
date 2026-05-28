@@ -22,8 +22,9 @@ function showToast(message, type = "info") {
       <i class="fas ${icons[type] || "fa-info-circle"}"></i>
     </div>
     <div class="toast-content">
-      <div class="toast-title">${type.charAt(0).toUpperCase() + type.slice(1)
-    }</div>
+      <div class="toast-title">${
+        type.charAt(0).toUpperCase() + type.slice(1)
+      }</div>
       <div class="toast-message">${message}</div>
     </div>
     <button class="toast-close" onclick="this.parentElement.remove()">
@@ -214,12 +215,21 @@ window.logout = function () {
   }
 };
 
+function normalizeSidebarBadges() {
+  document.querySelectorAll(".nav-badge").forEach((badge) => {
+    const value = (badge.textContent || "").trim();
+    badge.style.display = !value || value === "0" ? "none" : "inline-block";
+  });
+}
+
 // Initialize page
 function initPage() {
   // Check for admin authentication using separate admin keys
   const hasOldAuth = localStorage.getItem("adminLoggedIn");
   const adminToken = localStorage.getItem("lfp_admin_token");
-  const adminData = JSON.parse(localStorage.getItem("lfp_admin_data") || 'null');
+  const adminData = JSON.parse(
+    localStorage.getItem("lfp_admin_data") || "null",
+  );
 
   // If no admin authentication found, redirect to login
   if (!hasOldAuth && !adminToken) {
@@ -228,18 +238,22 @@ function initPage() {
   }
 
   // If admin token exists but user is not admin, redirect
-  if (adminToken && adminData && adminData.role !== 'admin') {
-    alert('Access denied. Admin account required.');
-    localStorage.removeItem('lfp_admin_token');
-    localStorage.removeItem('lfp_admin_data');
-    localStorage.removeItem('adminLoggedIn');
-    localStorage.removeItem('adminUsername');
+  if (adminToken && adminData && adminData.role !== "admin") {
+    alert("Access denied. Admin account required.");
+    localStorage.removeItem("lfp_admin_token");
+    localStorage.removeItem("lfp_admin_data");
+    localStorage.removeItem("adminLoggedIn");
+    localStorage.removeItem("adminUsername");
     window.location.href = "login-admin.html";
     return false;
   }
 
   // Get admin name from either storage method
-  const adminName = localStorage.getItem("adminUsername") || adminData?.name || adminData?.email || "Admin";
+  const adminName =
+    localStorage.getItem("adminUsername") ||
+    adminData?.name ||
+    adminData?.email ||
+    "Admin";
   const adminNameElement = document.getElementById("adminName");
   if (adminNameElement) {
     adminNameElement.textContent = adminName;
@@ -247,6 +261,7 @@ function initPage() {
 
   // Set active navigation
   setActiveNav();
+  normalizeSidebarBadges();
 
   // Update page title based on current page
   const currentPage = getCurrentPage();
