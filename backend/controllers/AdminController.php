@@ -3,31 +3,36 @@
 require_once __DIR__ . '/../models/UserModel.php';
 require_once __DIR__ . '/../models/PlaceModel.php';
 require_once __DIR__ . '/../models/ReportModel.php';
+require_once __DIR__ . '/../models/FavoriteModel.php';
 require_once __DIR__ . '/../middleware/AuthMiddleware.php';
 require_once __DIR__ . '/../services/JwtService.php';
 
-/* 
-Methods for admin: 
--> get all users 
+/*
+Methods for admin:
+-> get all users
 -> block user
 -> get places by id or all places
 -> approve place
 -> delete a place
 -> get all reports
--> update report status 
+-> update report status
 */
 class AdminController {
     // dependecies
     private UserModel $user_model;
     private ReportModel $report_model;
     private PlaceModel $place_model;
+    private FavoriteModel $favorite_model;
     private AuthMiddleware $auth_middleware;
+    private PDO $conn;
 
     public function __construct(PDO $conn)
     {
+        $this->conn = $conn;
         $this->user_model = new UserModel(conn: $conn);
         $this->report_model = new ReportModel(conn: $conn);
         $this->place_model = new PlaceModel(conn:$conn);
+        $this->favorite_model = new FavoriteModel(conn: $conn);
         $this->auth_middleware = new AuthMiddleware(new JwtService());
     }
 
@@ -85,7 +90,7 @@ class AdminController {
 
         $valid_status = ['pending', 'resolved', 'rejected'];
         if(!in_array($status, $valid_status)){
-            $this->response(content: ["error" => "Invalid status. Must be: pending, resolved, or rejected"], statusCode: 400); 
+            $this->response(content: ["error" => "Invalid status. Must be: pending, resolved, or rejected"], statusCode: 400);
             return;
         }
 
@@ -102,7 +107,7 @@ class AdminController {
         $data = $this->place_model->getAllForAdmin();
         $this->response(content: ['success' => true ,'places' => $data]);
     }
-    
+
     public function getPendingPlaces(): void{
         $this->auth_middleware->requireRole(['admin']);
 
@@ -120,7 +125,7 @@ class AdminController {
             $this->response(content: ['error' => 'Invalid format. Place id is required'], statusCode: 400);
             return;
         }
-        
+
         $id = (int) ($input['place_id'] ?? 0);
 
 
@@ -152,9 +157,21 @@ class AdminController {
             return;
         }
 
-        $this->place_model->delete(id: $id);
+        try {
+            $this->conn->beginTransaction();
+            $this->favorite_model->deleteByPlaceId($id);
+            $this->place_model->delete(id: $id);
+            $this->report_model->resolveByPlaceId($id);
+            $this->conn->commit();
 
-        $this->response(content:['success' => true, 'message' => 'Place deleted successfully!']);
+            $this->response(content:['success' => true, 'message' => 'Place removed successfully and related reports resolved!']);
+        } catch (Throwable $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+            error_log('Admin deletePlace failed: ' . $e->getMessage());
+            $this->response(content: ['error' => 'Failed to delete place', 'details' => $e->getMessage()], statusCode: 500);
+        }
     }
 
     private function response(array $content, int $statusCode = 200): void{
@@ -162,4 +179,3 @@ class AdminController {
         echo json_encode($content);
     }
 }
-?>

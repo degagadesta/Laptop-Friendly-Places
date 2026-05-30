@@ -43,7 +43,6 @@
       <a href="places.html" class="nav-item">
         <i class="fas fa-map-marker-alt nav-icon"></i>
         <span>Places</span>
-        <span class="nav-badge" id="placesBadge">0</span>
       </a>
 
       <a href="add-place.html" class="nav-item">
@@ -54,7 +53,6 @@
       <a href="reported.html" class="nav-item active">
         <i class="fas fa-flag nav-icon"></i>
         <span>Reported</span>
-        <span class="nav-badge" id="reportedBadge">0</span>
       </a>
 
       <a href="contributors.html" class="nav-item">
@@ -108,6 +106,13 @@
           Refresh
         </button>
       </div>
+    </div>
+
+    <div class="table-filters" style="display:flex;gap:10px;align-items:center;margin-bottom:16px;">
+      <button class="filter-btn active" onclick="filterReports('all', event)">All</button>
+      <button class="filter-btn" onclick="filterReports('pending', event)">Pending</button>
+      <button class="filter-btn" onclick="filterReports('resolved', event)">Resolved</button>
+      <button class="filter-btn" onclick="filterReports('rejected', event)">Rejected</button>
     </div>
 
     <div class="table-container">
@@ -170,7 +175,7 @@
     </div>
   </div>
 
-  <!-- JavaScript Files --><!-- 
+  <!-- JavaScript Files --><!--
     <script src="../js/database.js"></script> -->
   <script src="../js/api.js"></script>
   <script src="../js/utils.js"></script>
